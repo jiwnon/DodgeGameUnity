@@ -1,21 +1,46 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 
 public class ScoreManager : MonoBehaviour
 {
-    public TextMeshProUGUI scoreText;
+    public static ScoreManager Instance { get; private set; }
 
-    // »õ·Î Ãß°¡: °ÔÀÓ ¿À¹ö ÆĞ³Î ¿ÀºêÁ§Æ®¸¦ ¿¬°áÇÒ º¯¼ö
-    public GameObject gameOverPanel;
-
-    // ÃÖÁ¾ Á¡¼ö¸¦ ÀúÀåÇÒ º¯¼ö (PoopCollision¿¡¼­ Á¢±ÙÇÏ¿© Á¡¼ö¸¦ ÀĞ¾î°¥ ¶§ »ç¿ëµË´Ï´Ù.)
-    [HideInInspector] public float finalScore = 0f;
+    [Header("UI")]
+    [SerializeField] private TextMeshProUGUI scoreText;
+    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private TextMeshProUGUI finalScoreText; // âœ… ì¶”ê°€
 
     public float score = 0f;
 
-    void Update()
+    private bool isGameOver = false;
+
+    private void Awake()
     {
+        // âœ… ì”¬ì—ì„œ ì°¾ì§€ ì•Šê³  ì „ì—­ ì ‘ê·¼(ì‹±ê¸€í†¤)
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
+
+    private void Update()
+    {
+        if (isGameOver) return;
+
         score += Time.deltaTime * 10f;
         scoreText.text = "Score: " + Mathf.FloorToInt(score).ToString();
+    }
+
+    public void GameOver()
+    {
+        if (isGameOver) return; // ì¤‘ë³µ í˜¸ì¶œ ë°©ì§€
+        isGameOver = true;
+
+        gameOverPanel.SetActive(true);
+        finalScoreText.text = "Final Score: " + Mathf.FloorToInt(score).ToString();
+
+        Time.timeScale = 0f;
     }
 }

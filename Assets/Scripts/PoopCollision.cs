@@ -1,36 +1,17 @@
-using UnityEngine;
-using TMPro; // TextMeshPro¸¦ »ç¿ëÇÏ±â À§ÇØ Ãß°¡
+ï»¿using UnityEngine;
 
 public class PoopCollision : MonoBehaviour
 {
-    void OnCollisionEnter2D(Collision2D collision)
+    private void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Player"))
         {
             Debug.Log("Game Over!");
-
-            // 1. Scene¿¡¼­ ScoreManager ÄÄÆ÷³ÍÆ®¸¦ °¡Áø ¿ÀºêÁ§Æ®¸¦ Ã£½À´Ï´Ù.
-            ScoreManager sm = FindFirstObjectByType<ScoreManager>();
-
-            if (sm != null)
-            {
-                // 2. ÇöÀç Á¡¼ö¸¦ ÃÖÁ¾ Á¡¼ö¿¡ ÀúÀåÇÏ°í, °ÔÀÓ ¿À¹ö ÆĞ³ÎÀ» ÄÕ´Ï´Ù.
-                sm.finalScore = sm.score;
-                sm.gameOverPanel.SetActive(true);
-
-                // 3. °ÔÀÓ ¿À¹ö ÆĞ³Î ³»ÀÇ FinalScoreText¸¦ Ã£¾Æ Á¡¼ö¸¦ Ç¥½ÃÇÕ´Ï´Ù.
-                // *ÀÌ¸§ÀÌ FinalScoreTextÀÎÁö È®ÀÎÇØÁÖ¼¼¿ä!*
-                TextMeshProUGUI finalScoreText = sm.gameOverPanel.transform.Find("FinalScoreText").GetComponent<TextMeshProUGUI>();
-                finalScoreText.text = "Final Score: " + Mathf.FloorToInt(sm.finalScore).ToString();
-            }
-
-            // 4. ¸ğµç ¿òÁ÷ÀÓ ¸ØÃã (Time.timeScale = 0f)
-            Time.timeScale = 0f;
-
+            ScoreManager.Instance?.GameOver();   // âœ… ì”¬ ê²€ìƒ‰/Transform.Find ì—†ìŒ
             Destroy(gameObject);
+            return;
         }
 
-        // (Ground ÅÂ±×¿¡ ´êÀ¸¸é ¶Ë »èÁ¦ ·ÎÁ÷Àº ±×´ë·Î µÓ´Ï´Ù.)
         if (collision.gameObject.CompareTag("Ground"))
         {
             Destroy(gameObject);

@@ -2,31 +2,49 @@ using UnityEngine;
 
 public class PoopManager : MonoBehaviour
 {
-    // 1. 유니티 에디터에서 'Poop' 프리팹을 여기에 넣어줄 거에요.
-    public GameObject poopPrefab;
+    [SerializeField] private GameObject poopPrefab;
+    [SerializeField] private float spawnInterval = 1.0f;
 
-    // 2. 똥이 떨어질 간격 (예: 1초마다)
-    public float interval = 1f;
+    [Header("Spawn Bounds (Camera-based)")]
+    [SerializeField] private float xPadding = 0.5f;   // 화면 가장자리에서 안쪽으로
+    [SerializeField] private float yOffset = 1.0f;    // 화면 위에서 추가로 더 위로
 
-    void Start()
+    private float timer;
+    private Camera cam;
+
+    private void Awake()
     {
-        // 3. Start 후 0초부터 interval(1초)마다 PoopDrop 함수를 반복해서 실행합니다.
-        InvokeRepeating("PoopDrop", 0f, interval);
+        cam = Camera.main;
+        if (cam == null)
+            Debug.LogError("Main Camera not found. Tag your camera as MainCamera.");
     }
 
-    void PoopDrop()
+    private void Update()
     {
-        // 4. 화면의 가장자리 범위 (Unity에서는 대략 -9 ~ 9)
-        float maxLeft = -8f;
-        float maxRight = 8f;
+        if (cam == null) return;
 
-        // 5. maxLeft와 maxRight 사이에서 무작위 x 위치를 결정합니다.
-        float randomX = Random.Range(maxLeft, maxRight);
+        timer += Time.deltaTime;
+        if (timer >= spawnInterval)
+        {
+            timer = 0f;
+            SpawnPoop();
+        }
+    }
 
-        // 6. 똥이 생성될 위치 (무작위 x, 화면 위쪽 y=5)
-        Vector3 spawnPosition = new Vector3(randomX, 5f, 0);
+    private void SpawnPoop()
+    {
+        // 화면 좌/우 끝 월드 좌표 얻기 (y는 아무 값이나 상관없음)
+        Vector3 left = cam.ViewportToWorldPoint(new Vector3(0f, 0.5f, cam.nearClipPlane));
+        Vector3 right = cam.ViewportToWorldPoint(new Vector3(1f, 0.5f, cam.nearClipPlane));
 
-        // 7. poopPrefab을 spawnPosition에 생성(Instantiate)합니다.
-        Instantiate(poopPrefab, spawnPosition, Quaternion.identity);
+        float minX = left.x + xPadding;
+        float maxX = right.x - xPadding;
+
+        // 화면 위쪽 월드 좌표
+        Vector3 top = cam.ViewportToWorldPoint(new Vector3(0.5f, 1f, cam.nearClipPlane));
+        float spawnY = top.y + yOffset;
+
+        float spawnX = Random.Range(minX, maxX);
+        Instantiate(poopPrefab, new Vector3(spawnX, spawnY, 0f), Quaternion.identity);
     }
 }
