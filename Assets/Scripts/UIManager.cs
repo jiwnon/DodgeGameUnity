@@ -1,38 +1,97 @@
-using UnityEngine;
-using UnityEngine.SceneManagement;
+ï»¿using UnityEngine;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
+    [Header("Panels / Buttons")]
     public GameObject settingsPanel;
+    public GameObject[] mainButtons;
 
-    // »õ·Î Ãß°¡: ¼û±æ ¸ŞÀÎ È­¸é ¹öÆ°µéÀ» ¿¬°áÇÒ º¯¼ö
-    public GameObject[] mainButtons; // ¿©·¯ ¹öÆ°À» ÇÑ ¹ø¿¡ °ü¸®ÇÏ±â À§ÇØ ¹è¿­ »ç¿ë
+    [Header("Audio Settings UI")]
+    [SerializeField] private Toggle bgmToggle;
+    [SerializeField] private Slider bgmVolumeSlider;
+
+    private const string PREF_BGM_ON = "BGM_ON";
+    private const string PREF_BGM_VOL = "BGM_VOL";
+
+    private void Start()
+    {
+        if (AudioManager.Instance == null)
+        {
+            Debug.LogWarning("AudioManager ì¸ìŠ¤í„´ìŠ¤ê°€ ì—†ìŠµë‹ˆë‹¤. Audio ê´€ë ¨ í˜¸ì¶œì´ ë¬´ì‹œë©ë‹ˆë‹¤.");
+            return;
+        }
+
+        // ê¸°ë³¸ê°’ ë³´ì¥
+        if (!PlayerPrefs.HasKey(PREF_BGM_ON))
+            PlayerPrefs.SetInt(PREF_BGM_ON, 1);
+
+        if (!PlayerPrefs.HasKey(PREF_BGM_VOL))
+            PlayerPrefs.SetFloat(PREF_BGM_VOL, 0.7f);
+
+        PlayerPrefs.Save();
+
+        // ì €ì¥ê°’ ë¡œë“œ
+        bool bgmOn = PlayerPrefs.GetInt(PREF_BGM_ON, 1) == 1;
+        float vol = Mathf.Clamp01(PlayerPrefs.GetFloat(PREF_BGM_VOL, 0.7f));
+
+        // UIì— ë°˜ì˜(ì´ë²¤íŠ¸ íŠ ë°©ì§€)
+        if (bgmToggle != null)
+            bgmToggle.SetIsOnWithoutNotify(bgmOn);
+
+        if (bgmVolumeSlider != null)
+            bgmVolumeSlider.SetValueWithoutNotify(vol);
+
+        // ì˜¤ë””ì˜¤ì— ë°˜ì˜
+        AudioManager.Instance.SetVolume(vol);
+        AudioManager.Instance.SetMuted(!bgmOn);
+
+        // ì”¬ ì§„ì… ì‹œ BGMì€ "í•­ìƒ" ì‹œì‘(íŠ¸ë™ ì„ íƒ/ì „í™˜ì€ SceneBGMì´ ë‹´ë‹¹)
+        // OFF ìƒíƒœë¼ë©´ ì´ë¯¸ SetMuted(true)ë¼ì„œ ì†Œë¦¬ë§Œ ì•ˆ ë‚˜ê³ , ì¬ìƒ ìœ„ì¹˜ëŠ” ìœ ì§€ë¨
+        TryPlaySceneBGM();
+    }
 
     public void ToggleSettings()
     {
         bool isPanelActive = !settingsPanel.activeSelf;
         settingsPanel.SetActive(isPanelActive);
 
-        // **»õ·Î Ãß°¡µÈ ·ÎÁ÷:**
-        // ¼³Á¤Ã¢ÀÌ ¿­¸®¸é(isPanelActive=true) ¸ŞÀÎ ¹öÆ°µéÀ» ¼û±â°í, ´İÈ÷¸é ´Ù½Ã º¸¿©Áİ´Ï´Ù.
         bool shouldButtonsBeActive = !isPanelActive;
-
         foreach (GameObject button in mainButtons)
-        {
-            if (button != null)
-            {
-                button.SetActive(shouldButtonsBeActive);
-            }
-        }
+            if (button != null) button.SetActive(shouldButtonsBeActive);
 
-        // ±âÁ¸ ½Ã°£ Á¤Áö ·ÎÁ÷
-        if (isPanelActive)
-        {
-            Time.timeScale = 0f;
-        }
-        else
-        {
-            Time.timeScale = 1f;
-        }
+        Time.timeScale = isPanelActive ? 0f : 1f;
+    }
+
+    // Toggleì˜ OnValueChanged(bool)ì— ì—°ê²°
+    public void OnBgmToggleChanged(bool isOn)
+    {
+        PlayerPrefs.SetInt(PREF_BGM_ON, isOn ? 1 : 0);
+        PlayerPrefs.Save();
+
+        // âœ… Stop/Play í•˜ì§€ ë§ê³  "ë®¤íŠ¸"ë§Œ
+        AudioManager.Instance.SetMuted(!isOn);
+
+        // ONìœ¼ë¡œ ì¼°ëŠ”ë° ì•„ì§ í´ë¦½ì´ ì—†ê±°ë‚˜ ì¬ìƒì´ ì•ˆ ë˜ê³  ìˆìœ¼ë©´ ì‹œì‘ë§Œ ë³´ì¥
+        if (isOn && (!AudioManager.Instance.HasBgmClip || !AudioManager.Instance.IsBgmPlaying))
+            TryPlaySceneBGM();
+    }
+
+    // Sliderì˜ OnValueChanged(float)ì— ì—°ê²° (0~1)
+    public void OnBgmVolumeChanged(float value)
+    {
+        value = Mathf.Clamp01(value);
+
+        PlayerPrefs.SetFloat(PREF_BGM_VOL, value);
+        PlayerPrefs.Save();
+
+        AudioManager.Instance.SetVolume(value);
+    }
+
+    private void TryPlaySceneBGM()
+    {
+        var sceneBgm = FindFirstObjectByType<SceneBGM>();
+        if (sceneBgm != null) sceneBgm.Play();
+        else AudioManager.Instance.PlayCurrentBGM();
     }
 }
