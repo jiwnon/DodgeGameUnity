@@ -23,7 +23,10 @@ public class AudioManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // 안전: 시작 시 현재 상태 반영
+        // bgmSource를 인스펙터에 안 넣었을 때도 안전하게 보정
+        if (bgmSource == null)
+            bgmSource = GetComponent<AudioSource>();
+
         ApplyBgmVolume();
     }
 
@@ -35,13 +38,13 @@ public class AudioManager : MonoBehaviour
         // 같은 클립이면 재시작하지 않음(중요!)
         if (bgmSource.clip == clip)
         {
-            // 혹시 멈춰있기만 하면 다시 재생
+            // 멈춰있기만 하면 다시 재생
             if (!bgmSource.isPlaying)
                 bgmSource.Play();
             return;
         }
 
-        // 다른 곡이면 교체 후 재생(이건 씬별 BGM 전환을 위해 필요)
+        // 다른 곡이면 교체 후 재생
         bgmSource.clip = clip;
         bgmSource.Play();
     }
@@ -55,7 +58,7 @@ public class AudioManager : MonoBehaviour
             bgmSource.Play();
     }
 
-    // 이제 Stop은 "곡을 끊고 싶을 때"만 사용 (토글 OFF에는 사용하지 말 것)
+    // Stop은 "곡 자체를 끊고 싶을 때"만 (토글 OFF에는 사용하지 말 것)
     public void StopBGM()
     {
         if (bgmSource == null) return;
@@ -77,10 +80,12 @@ public class AudioManager : MonoBehaviour
     }
 
     public bool IsMuted => isMuted;
-
     public bool HasBgmClip => (bgmSource != null && bgmSource.clip != null);
-
     public bool IsBgmPlaying => (bgmSource != null && bgmSource.isPlaying);
+
+    // 디버깅용으로 유용
+    public AudioClip CurrentClip => bgmSource != null ? bgmSource.clip : null;
+    public float CurrentVolume => bgmSource != null ? bgmSource.volume : 0f;
 
     private void ApplyBgmVolume()
     {
